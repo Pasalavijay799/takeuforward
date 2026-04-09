@@ -133,6 +133,26 @@
   width: 100%;
   height: auto;
   min-height: 0;
+  perspective: 1400px;
+}
+
+.sheetMotionLayer {
+  position: relative;
+  transform-origin: center top;
+}
+
+.sheetGestureLayer {
+  --sheet-drag-x: 0px;
+  position: relative;
+  transform: translate3d(var(--sheet-drag-x), 0, 0);
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  cursor: grab;
+}
+
+.sheetGestureActive {
+  cursor: grabbing;
+  transition: none;
 }
 
 .sheetShadow {
@@ -179,6 +199,7 @@
   min-height: clamp(15rem, 42vh, 20rem);
   overflow: hidden;
   background: #dbe8f1;
+  touch-action: pan-y;
 }
 
 .heroArtMotion {
@@ -320,6 +341,7 @@
     background-color 160ms ease,
     color 160ms ease,
     box-shadow 160ms ease;
+  touch-action: manipulation;
 }
 
 .mobileToggleButtonActive {
@@ -335,6 +357,7 @@
   border: 0;
   background: transparent;
   border-radius: 0;
+  touch-action: pan-y;
 }
 
 .notesPanel {
@@ -357,6 +380,14 @@
   justify-content: space-between;
   align-items: end;
   gap: 0.8rem;
+}
+
+.notesHeadingActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .toolbarEyebrow {
@@ -492,6 +523,12 @@
   transition:
     color 160ms ease,
     transform 160ms ease;
+  touch-action: manipulation;
+}
+
+.notesHeaderAction {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
 }
 
 .textAction:disabled {
@@ -549,6 +586,7 @@
   padding: 0 0.75rem;
   border-radius: 999px;
   font-weight: 700;
+  touch-action: manipulation;
 }
 
 .weekdayRow {
@@ -587,6 +625,7 @@
   height: 100%;
   min-height: 0;
   transform-origin: center top;
+  touch-action: pan-y;
 }
 
 .dayCell {
@@ -608,6 +647,7 @@
   cursor: pointer;
   overflow: hidden;
   isolation: isolate;
+  touch-action: manipulation;
   transition:
     transform 160ms ease,
     color 160ms ease;
@@ -648,6 +688,14 @@
   overflow: hidden;
   padding: 0.2rem 0.15rem;
   text-align: center;
+}
+
+.dayHeader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.34rem;
+  min-height: 1rem;
 }
 
 .dayLabel {
@@ -783,11 +831,10 @@
 }
 
 .todayDot {
-  position: absolute;
-  left: 0.38rem;
-  top: 0.38rem;
-  width: 0.28rem;
-  height: 0.28rem;
+  position: static;
+  width: 0.34rem;
+  height: 0.34rem;
+  flex: 0 0 auto;
   border-radius: 999px;
   background: currentColor;
   z-index: 2;
@@ -795,6 +842,14 @@
 
 .dayBoundary .todayDot {
   background: rgba(255, 255, 255, 0.96);
+}
+
+.sheetMotionNext {
+  animation: sheetLiftNext 560ms cubic-bezier(0.2, 0.88, 0.24, 1);
+}
+
+.sheetMotionPrev {
+  animation: sheetLiftPrev 560ms cubic-bezier(0.2, 0.88, 0.24, 1);
 }
 
 .monthMotionNext {
@@ -816,7 +871,7 @@
 @keyframes monthSlideNext {
   0% {
     opacity: 0;
-    transform: translate3d(26px, 0, 0) scale(0.985);
+    transform: translate3d(34px, 0, 0) scale(0.985);
     filter: blur(10px);
   }
 
@@ -824,6 +879,23 @@
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0);
+  }
+}
+
+@keyframes sheetLiftNext {
+  0% {
+    opacity: 0.92;
+    transform: translate3d(56px, -12px, 0) rotate(1.1deg) scale(0.985);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translate3d(20px, -4px, 0) rotate(0.35deg) scale(0.994);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   }
 }
 
@@ -940,7 +1012,7 @@
 @keyframes monthSlidePrev {
   0% {
     opacity: 0;
-    transform: translate3d(-26px, 0, 0) scale(0.985);
+    transform: translate3d(-34px, 0, 0) scale(0.985);
     filter: blur(10px);
   }
 
@@ -948,6 +1020,23 @@
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0);
+  }
+}
+
+@keyframes sheetLiftPrev {
+  0% {
+    opacity: 0.92;
+    transform: translate3d(-56px, -12px, 0) rotate(-1.1deg) scale(0.985);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translate3d(-20px, -4px, 0) rotate(-0.35deg) scale(0.994);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   }
 }
 
@@ -1007,6 +1096,10 @@
   .notesPad {
     max-width: 10.5rem;
     min-height: 15.5rem;
+  }
+
+  .notesHeadingActions {
+    margin-left: auto;
   }
 
   .dayCell {
@@ -1137,6 +1230,10 @@
     padding: 0.35rem 0.2rem;
   }
 
+  .dayHeader {
+    gap: 0.26rem;
+  }
+
   .dayWeatherTemp {
     font-size: 0.62rem;
   }
@@ -1170,7 +1267,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hanger,
+  .sheetMotionNext,
+  .sheetMotionPrev,
   .sheetShadow,
+  .sheetGestureLayer,
   .textAction,
   .mobileToggleButton,
   .navButton,

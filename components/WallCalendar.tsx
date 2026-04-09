@@ -1,7 +1,14 @@
 "use client";
 
 import Image, { type StaticImageData } from "next/image";
-import { startTransition, type CSSProperties, useEffect, useState } from "react";
+import {
+  startTransition,
+  type CSSProperties,
+  useEffect,
+  type PointerEvent as ReactPointerEvent,
+  useRef,
+  useState,
+} from "react";
 import {
   addMonths,
   buildCalendarDays,
@@ -24,6 +31,9 @@ import styles from "./WallCalendar.module.css";
 
 const STORAGE_KEY = "wall-calendar-notes-v1";
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const SWIPE_ACTIVATION_PX = 12;
+const SWIPE_TRIGGER_PX = 86;
+const SWIPE_MAX_PX = 160;
 
 type NotesStore = Record<string, string>;
 type MonthMotion = "next" | "prev";
@@ -32,6 +42,12 @@ type HeroPhotoAsset = {
   position: string;
   scale: string;
   src: StaticImageData;
+};
+type SwipeGesture = {
+  dragging: boolean;
+  pointerId: number;
+  startX: number;
+  startY: number;
 };
 
 function getHeroPhotoAsset(monthIndex: number): HeroPhotoAsset {
@@ -88,12 +104,18 @@ export function WallCalendar() {
   const [notesReady, setNotesReady] = useState(false);
   const [monthMotion, setMonthMotion] = useState<MonthMotion>("next");
   const [mobileView, setMobileView] = useState<MobileView>("calendar");
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDraggingMonth, setIsDraggingMonth] = useState(false);
+  const swipeGestureRef = useRef<SwipeGesture | null>(null);
+  const blockDayClickRef = useRef(false);
 
   const days = buildCalendarDays(visibleMonth);
   const visibleMonthName = formatMonthName(visibleMonth);
   const visibleMonthKey = getMonthKey(visibleMonth);
   const heroPhotoAsset = getHeroPhotoAsset(visibleMonth.getMonth());
   const heroTheme = getMonthHero(visibleMonth.getMonth());
+  const sheetMotionClass =
+    monthMotion === "prev" ? styles.sheetMotionPrev : styles.sheetMotionNext;
   const monthMotionClass =
     monthMotion === "prev" ? styles.monthMotionPrev : styles.monthMotionNext;
   const heroArtMotionClass =
@@ -102,6 +124,9 @@ export function WallCalendar() {
     "--hero-accent": heroTheme.accentEnd,
     "--hero-accent-soft": heroTheme.accentStart,
     "--hero-glow": heroTheme.glowColor,
+  } as CSSProperties;
+  const sheetGestureStyles = {
+    "--sheet-drag-x": `${dragOffset}px`,
   } as CSSProperties;
   const heroPhotoStyles = {
     objectPosition: heroPhotoAsset.position,
@@ -203,7 +228,113 @@ export function WallCalendar() {
     );
   }
 
+  function armBlockedDayClick() {
+    blockDayClickRef.current = true;
+    window.setTimeout(() => {
+      blockDayClickRef.current = false;
+    }, 0);
+  }
+
+  function resetMonthSwipe() {
+    swipeGestureRef.current = null;
+    setDragOffset(0);
+    setIsDraggingMonth(false);
+  }
+
+  function handleMonthSwipeStart(event: ReactPointerEvent<HTMLElement>) {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+    const isDayCellButton = Boolean(target.closest("[data-day-cell='true']"));
+
+    if (target.closest("textarea")) {
+      return;
+    }
+
+    if (isDayCellButton) {
+      return;
+    }
+
+    if (target.closest("button") && !isDayCellButton) {
+      return;
+    }
+
+    swipeGestureRef.current = {
+      dragging: false,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+  }
+
+  function handleMonthSwipeMove(event: ReactPointerEvent<HTMLElement>) {
+    const swipeGesture = swipeGestureRef.current;
+
+    if (!swipeGesture || swipeGesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - swipeGesture.startX;
+    const deltaY = event.clientY - swipeGesture.startY;
+
+    if (!swipeGesture.dragging) {
+      if (Math.abs(deltaX) < SWIPE_ACTIVATION_PX) {
+        return;
+      }
+
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        swipeGestureRef.current = null;
+        return;
+      }
+
+      swipeGesture.dragging = true;
+      setIsDraggingMonth(true);
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
+
+    event.preventDefault();
+    setDragOffset(Math.max(-SWIPE_MAX_PX, Math.min(SWIPE_MAX_PX, deltaX)));
+  }
+
+  function handleMonthSwipeEnd(event: ReactPointerEvent<HTMLElement>) {
+    const swipeGesture = swipeGestureRef.current;
+
+    if (!swipeGesture || swipeGesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - swipeGesture.startX;
+    const shouldChangeMonth =
+      swipeGesture.dragging && Math.abs(deltaX) > SWIPE_TRIGGER_PX;
+
+    if (swipeGesture.dragging) {
+      event.preventDefault();
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
+
+    resetMonthSwipe();
+
+    if (shouldChangeMonth) {
+      armBlockedDayClick();
+      changeMonth(deltaX < 0 ? 1 : -1);
+    }
+  }
+
   function handleDayClick(dayKey: string, date: Date) {
+    if (blockDayClickRef.current) {
+      return;
+    }
+
+    if (
+      rangeStart === dayKey &&
+      (!rangeEnd || rangeEnd === rangeStart)
+    ) {
+      clearSelection();
+      return;
+    }
+
     if (!rangeStart || rangeEnd) {
       setRangeStart(dayKey);
       setRangeEnd(null);
@@ -287,10 +418,23 @@ export function WallCalendar() {
         </div>
 
         <div className={styles.sheetFrame}>
-          <div className={styles.sheetShadow} aria-hidden="true" />
-          <div className={styles.sheet}>
+          <div
+            key={`sheet-${visibleMonthKey}-${monthMotion}`}
+            className={`${styles.sheetMotionLayer} ${sheetMotionClass}`}
+          >
+            <div
+              className={`${styles.sheetGestureLayer} ${
+                isDraggingMonth ? styles.sheetGestureActive : ""
+              }`}
+              style={sheetGestureStyles}
+            >
+              <div className={styles.sheetShadow} aria-hidden="true" />
+              <div className={styles.sheet}>
         <header className={styles.hero}>
-          <div className={styles.heroImage} style={heroStyles}>
+          <div
+            className={styles.heroImage}
+            style={heroStyles}
+          >
             <div
               key={`art-${visibleMonthKey}-${monthMotion}`}
               className={`${styles.heroArtMotion} ${heroArtMotionClass}`}
@@ -357,7 +501,18 @@ export function WallCalendar() {
             <div className={styles.notesHeader}>
               <div className={styles.notesHeading}>
                 <p className={styles.notesLabel}>Notes</p>
-                <p className={styles.notesMeta}>{notesModeLabel}</p>
+                <div className={styles.notesHeadingActions}>
+                  {rangeStart ? (
+                    <button
+                      type="button"
+                      className={`${styles.textAction} ${styles.notesHeaderAction}`}
+                      onClick={clearSelection}
+                    >
+                      Month note
+                    </button>
+                  ) : null}
+                  <p className={styles.notesMeta}>{notesModeLabel}</p>
+                </div>
               </div>
               <p className={styles.notesScope}>{notesScopeLabel}</p>
             </div>
@@ -410,7 +565,9 @@ export function WallCalendar() {
             </div>
           </aside>
 
-          <section className={calendarPanelClassName}>
+          <section
+            className={calendarPanelClassName}
+          >
             <div className={styles.toolbar}>
               <div className={styles.toolbarCopy}>
                 <p className={styles.toolbarEyebrow}>Month view</p>
@@ -453,6 +610,10 @@ export function WallCalendar() {
             <div
               key={`grid-${visibleMonthKey}-${monthMotion}`}
               className={`${styles.calendarMotion} ${monthMotionClass}`}
+              onPointerDown={handleMonthSwipeStart}
+              onPointerMove={handleMonthSwipeMove}
+              onPointerUp={handleMonthSwipeEnd}
+              onPointerCancel={resetMonthSwipe}
             >
               <div className={styles.weekdayRow} role="presentation">
                 {WEEKDAYS.map((day) => (
@@ -493,6 +654,7 @@ export function WallCalendar() {
                     <button
                       key={day.key}
                       type="button"
+                      data-day-cell="true"
                       className={[
                         styles.dayCell,
                         isDimmed ? styles.dayMuted : "",
@@ -535,7 +697,12 @@ export function WallCalendar() {
                     >
                       <span className={styles.daySurface} aria-hidden="true" />
                       <span className={styles.dayContent}>
-                        <span className={styles.dayLabel}>{day.label}</span>
+                        <span className={styles.dayHeader}>
+                          {day.isToday ? (
+                            <span className={styles.todayDot} aria-hidden="true" />
+                          ) : null}
+                          <span className={styles.dayLabel}>{day.label}</span>
+                        </span>
                         {dayWeather ? (
                           <span className={styles.dayWeather}>
                             <span className={styles.dayWeatherTemp}>
@@ -547,7 +714,6 @@ export function WallCalendar() {
                           </span>
                         ) : null}
                       </span>
-                      {day.isToday ? <span className={styles.todayDot} /> : null}
                     </button>
                   );
                 })}
@@ -555,6 +721,8 @@ export function WallCalendar() {
             </div>
           </section>
         </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
