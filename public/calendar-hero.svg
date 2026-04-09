@@ -1,0 +1,47 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="215" y1="52" x2="986" y2="631" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DCE7F2"/>
+      <stop offset="1" stop-color="#B5C6D9"/>
+    </linearGradient>
+    <linearGradient id="ridgeA" x1="153" y1="525" x2="963" y2="348" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#354C67"/>
+      <stop offset="1" stop-color="#7F92AA"/>
+    </linearGradient>
+    <linearGradient id="ridgeB" x1="182" y1="631" x2="1118" y2="244" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16283C"/>
+      <stop offset="1" stop-color="#45627F"/>
+    </linearGradient>
+    <filter id="softBlur" x="-40" y="-40" width="1280" height="800" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="720" fill="url(#sky)"/>
+
+  <g opacity="0.45" filter="url(#softBlur)">
+    <circle cx="238" cy="124" r="126" fill="#FFFFFF"/>
+    <circle cx="922" cy="173" r="132" fill="#EDF3F8"/>
+    <circle cx="758" cy="97" r="68" fill="#E8F0F7"/>
+  </g>
+
+  <path d="M0 590L220 472L402 505L622 392L1200 184V720H0V590Z" fill="url(#ridgeA)"/>
+  <path d="M0 664L230 494L482 618L1200 205V720H0V664Z" fill="url(#ridgeB)"/>
+  <path d="M258 455L362 417L416 432L515 394L605 346L748 319L690 376L551 453L480 469L420 522L258 455Z" fill="#23384F" opacity="0.55"/>
+  <path d="M647 342L1200 150V257L884 412L760 428L687 386L647 342Z" fill="#A5B7CA" opacity="0.55"/>
+  <path d="M616 420L1200 132V197L907 349L842 353L760 410L687 431L616 420Z" fill="#E9EFF5" opacity="0.66"/>
+  <path d="M0 720V545L182 668L0 720Z" fill="#2B8ED8"/>
+  <path d="M770 720L1200 422V720H770Z" fill="#2B8ED8"/>
+
+  <g transform="translate(736 294) rotate(-16)">
+    <path d="M24 15L42 0L55 12L49 34L31 34L24 15Z" fill="#E34B37"/>
+    <path d="M31 35H49L62 80L45 81L31 35Z" fill="#D84033"/>
+    <path d="M27 38L11 78L20 83L38 48L27 38Z" fill="#1D2733"/>
+    <path d="M49 39L74 84L66 88L43 48L49 39Z" fill="#24303C"/>
+    <path d="M68 -4L82 -18L86 -13L75 -1L68 -4Z" fill="#293847"/>
+    <path d="M77 -3L90 28L84 31L70 2L77 -3Z" fill="#293847"/>
+    <path d="M9 79L0 112L8 114L20 83L9 79Z" fill="#111A23"/>
+    <path d="M68 84L90 118L98 111L76 78L68 84Z" fill="#18242E"/>
+    <circle cx="43" cy="10" r="9" fill="#24303C"/>
+  </g>
+</svg>
